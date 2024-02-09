@@ -46,28 +46,33 @@ async function fetchSheetData(sheetUrl: string): Promise<SheetRow[]> {
 }
 
 figma.ui.onmessage = async (msg) => {
-  if (msg.type === "update-text") {
-    const sheetData = await fetchSheetData(msg.url);
-    const textNodes = figma.currentPage.findAll(
-      (node) => node.type === "TEXT"
-    ) as TextNode[];
-    console.log(sheetData);
+  if (msg.type === 'update-text') {
+    const sheetData = await fetchSheetData(msg.url); // Fetch and parse the CSV data
+    const textNodes = figma.currentPage.findAll(node => node.type === "TEXT") as TextNode[];
 
+    // New logic for updating nodes
+    const nodeNameMatchCount: { [key: string]: number } = {};
     for (const node of textNodes) {
-      for (const node of textNodes) {
-        // Find a row where any key matches node.name (prefixed with '#')
-        sheetData.forEach(row => {
-          Object.keys(row).forEach(key => {
-            const keyWithHash = `#${key.toLocaleLowerCase()}`;
-            if (keyWithHash === node.name.toLocaleLowerCase()) {
-              // Load the font for the node
-              figma.loadFontAsync(node.fontName as FontName).then(() => {
-                // Once the font is loaded, set the node's characters to the value of the matched key
-                node.characters = row[key];
-              });
-            }
-          });
-        });
+      if (!nodeNameMatchCount[node.name]) {
+        nodeNameMatchCount[node.name] = 0;
+      }
+
+      const matchIndex = nodeNameMatchCount[node.name];
+      const matchingRows = sheetData.filter(row => Object.keys(row).some(key => `#${key.toLowerCase()}` === node.name.toLowerCase()));
+
+      if (matchingRows.length > matchIndex) {
+        const matchingRow = matchingRows[matchIndex];
+        for (const key of Object.keys(matchingRow)) {
+          const keyWithHash = `#${key}`;
+          if (keyWithHash === node.name) {
+            await figma.loadFontAsync(node.fontName as FontName);
+            node.characters = matchingRow[key];
+            break; // Exit the loop after setting characters to avoid unnecessary iterations
+          }
+        }
+        nodeNameMatchCount[node.name] += 1;
+      } else {
+        console.log(`No additional match found for node: ${node.name} at index ${matchIndex}`);
       }
     }
 
