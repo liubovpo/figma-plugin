@@ -1,5 +1,5 @@
 interface SheetRow {
-  [key: string]: string; // Updated to accommodate dynamic property names
+  [key: string]: string;
 }
 
 figma.showUI(__html__);
@@ -14,7 +14,6 @@ function csvToJson(csv: string): SheetRow[] {
 
   const headers = lines[0].split(",").map((header) => header.trim()); // Assuming the first row contains headers
 
-  // Process each data row
   for (let i = 1; i < lines.length; i++) {
     const cells = lines[i].split(",").map((cell) => cell.trim());
     if (cells.length < headers.length) continue; // Ensure the row has the required number of cells
@@ -29,28 +28,28 @@ function csvToJson(csv: string): SheetRow[] {
   return result;
 }
 
-// Keep the rest of your functions unchanged
 async function fetchSheetData(sheetUrl: string): Promise<SheetRow[]> {
-  const corsProxy = "https://corsproxy.io/?"; // Make sure this proxy works or adjust accordingly
+  const corsProxy = "https://corsproxy.io/?";
 
   try {
     const response = await fetch(`${corsProxy}${sheetUrl}`);
     if (!response.ok) throw new Error("Network response was not ok.");
     const csvText = await response.text();
     console.log(csvText);
-    return csvToJson(csvText); // Convert and return JSON data
+    return csvToJson(csvText);
   } catch (error) {
     console.error("Failed to fetch:", error);
-    return []; // Return an empty array in case of error
+    return [];
   }
 }
 
 figma.ui.onmessage = async (msg) => {
-  if (msg.type === 'update-text') {
-    const sheetData = await fetchSheetData(msg.url); // Fetch and parse the CSV data
-    const textNodes = figma.currentPage.findAll(node => node.type === "TEXT") as TextNode[];
+  if (msg.type === "update-text") {
+    const sheetData = await fetchSheetData(msg.url);
+    const textNodes = figma.currentPage.findAll(
+      (node) => node.type === "TEXT"
+    ) as TextNode[];
 
-    // New logic for updating nodes
     const nodeNameMatchCount: { [key: string]: number } = {};
     for (const node of textNodes) {
       if (!nodeNameMatchCount[node.name]) {
@@ -58,22 +57,60 @@ figma.ui.onmessage = async (msg) => {
       }
 
       const matchIndex = nodeNameMatchCount[node.name];
-      const matchingRows = sheetData.filter(row => Object.keys(row).some(key => `#${key.toLowerCase()}` === node.name.toLowerCase()));
+      const matchingRows = sheetData.filter((row) =>
+        Object.keys(row).some(
+          (key) => `#${key.toLowerCase()}` === node.name.toLowerCase()
+        )
+      );
+      const matchingSplitCells1 = sheetData.filter((row) =>
+        Object.keys(row).some(
+          (key) => `#${key.toLowerCase()}1` === node.name.toLowerCase()
+        )
+      );
+      const matchingSplitCells2 = sheetData.filter((row) =>
+        Object.keys(row).some(
+          (key) => `#${key.toLowerCase()}2` === node.name.toLowerCase()
+        )
+      );
 
       if (matchingRows.length > matchIndex) {
         const matchingRow = matchingRows[matchIndex];
         for (const key of Object.keys(matchingRow)) {
-          const keyWithHash = `#${key}`;
-          if (keyWithHash === node.name) {
+          const keyWithHash = `#${key.toLowerCase()}`;
+          if (keyWithHash === node.name.toLowerCase()) {
             await figma.loadFontAsync(node.fontName as FontName);
             node.characters = matchingRow[key];
-            break; // Exit the loop after setting characters to avoid unnecessary iterations
+            break;
           }
         }
         nodeNameMatchCount[node.name] += 1;
-      } else {
-        console.log(`No additional match found for node: ${node.name} at index ${matchIndex}`);
       }
+
+      if (matchingSplitCells1.length > matchIndex) {
+        const matchingSplitCell1 = matchingSplitCells1[matchIndex];
+
+        for (const key of Object.keys(matchingSplitCell1)) {
+          if (`#${key}1` === node.name) {
+            await figma.loadFontAsync(node.fontName as FontName);
+            node.characters = matchingSplitCell1[key].split(" - ")[0];
+            break;
+          }
+        }
+        nodeNameMatchCount[node.name] += 1;
+      } 
+
+      if (matchingSplitCells2.length > matchIndex) {
+        const matchingSplitCell2 = matchingSplitCells2[matchIndex];
+
+        for (const key of Object.keys(matchingSplitCell2)) {
+          if (`#${key}2` === node.name) {
+            await figma.loadFontAsync(node.fontName as FontName);
+            node.characters = matchingSplitCell2[key].split(" - ")[1];
+            break;
+          }
+        }
+        nodeNameMatchCount[node.name] += 1;
+      } 
     }
 
     // figma.closePlugin("Text layers updated from Google Sheets.");

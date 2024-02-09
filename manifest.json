@@ -13,7 +13,8 @@
     "allowedDomains": [
       "https://docs.google.com",
       "https://corsproxy.io/",
-      "https://doc-00-2s-sheets.googleusercontent.com"
+      "https://doc-00-2s-sheets.googleusercontent.com",
+      "https://proxy.cors.sh/"
     ]
   }
 }
