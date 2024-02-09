@@ -1,17 +1,9 @@
-<h2>Rectangle Creator</h2>
-<p>Count: <input id="count" value="5"></p>
-<button id="create">Create</button>
-<button id="cancel">Cancel</button>
+<label for="sheetUrl">Google Sheet URL:</label><br />
+<input type="text" id="sheetUrl" name="sheetUrl" /><br />
+<button id="updateText">Update Text Layers</button>
 <script>
-
-document.getElementById('create').onclick = () => {
-  const textbox = document.getElementById('count');
-  const count = parseInt(textbox.value, 10);
-  parent.postMessage({ pluginMessage: { type: 'create-rectangles', count } }, '*')
-}
-
-document.getElementById('cancel').onclick = () => {
-  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
-}
-
+  document.getElementById("updateText").addEventListener("click", () => {
+    const url = document.getElementById("sheetUrl").value;
+    parent.postMessage({ pluginMessage: { type: "update-text", url } }, "*");
+  });
 </script>

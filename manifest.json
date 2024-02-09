@@ -11,7 +11,9 @@
   "ui": "ui.html",
   "networkAccess": {
     "allowedDomains": [
-      "none"
+      "https://docs.google.com",
+      "https://corsproxy.io/",
+      "https://doc-00-2s-sheets.googleusercontent.com"
     ]
   }
 }
