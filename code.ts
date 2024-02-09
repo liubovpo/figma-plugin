@@ -52,24 +52,28 @@ figma.ui.onmessage = async (msg) => {
 
     const nodeNameMatchCount: { [key: string]: number } = {};
     for (const node of textNodes) {
+      let contentFound = false;
+
       if (!nodeNameMatchCount[node.name]) {
         nodeNameMatchCount[node.name] = 0;
       }
 
       const matchIndex = nodeNameMatchCount[node.name];
+      const nodeNameLower = node.name.toLowerCase();
+
       const matchingRows = sheetData.filter((row) =>
         Object.keys(row).some(
-          (key) => `#${key.toLowerCase()}` === node.name.toLowerCase()
+          (key) => `#${key.toLowerCase()}` === nodeNameLower
         )
       );
       const matchingSplitCells1 = sheetData.filter((row) =>
         Object.keys(row).some(
-          (key) => `#${key.toLowerCase()}1` === node.name.toLowerCase()
+          (key) => `#${key.toLowerCase()}1` === nodeNameLower
         )
       );
       const matchingSplitCells2 = sheetData.filter((row) =>
         Object.keys(row).some(
-          (key) => `#${key.toLowerCase()}2` === node.name.toLowerCase()
+          (key) => `#${key.toLowerCase()}2` === nodeNameLower
         )
       );
 
@@ -77,9 +81,10 @@ figma.ui.onmessage = async (msg) => {
         const matchingRow = matchingRows[matchIndex];
         for (const key of Object.keys(matchingRow)) {
           const keyWithHash = `#${key.toLowerCase()}`;
-          if (keyWithHash === node.name.toLowerCase()) {
+          if (keyWithHash === nodeNameLower) {
             await figma.loadFontAsync(node.fontName as FontName);
             node.characters = matchingRow[key];
+            contentFound = matchingRow[key] !== "";
             break;
           }
         }
@@ -90,29 +95,31 @@ figma.ui.onmessage = async (msg) => {
         const matchingSplitCell1 = matchingSplitCells1[matchIndex];
 
         for (const key of Object.keys(matchingSplitCell1)) {
-          if (`#${key}1` === node.name) {
+          if (`#${key.toLocaleLowerCase()}1` === nodeNameLower) {
             await figma.loadFontAsync(node.fontName as FontName);
             node.characters = matchingSplitCell1[key].split(" - ")[0];
+            contentFound = true;
             break;
           }
         }
         nodeNameMatchCount[node.name] += 1;
-      } 
+      }
 
       if (matchingSplitCells2.length > matchIndex) {
         const matchingSplitCell2 = matchingSplitCells2[matchIndex];
 
         for (const key of Object.keys(matchingSplitCell2)) {
-          if (`#${key}2` === node.name) {
+          if (`#${key.toLocaleLowerCase()}2` === nodeNameLower) {
             await figma.loadFontAsync(node.fontName as FontName);
             node.characters = matchingSplitCell2[key].split(" - ")[1];
+            contentFound = true;
             break;
           }
         }
         nodeNameMatchCount[node.name] += 1;
-      } 
+      }
+      node.visible = contentFound;
     }
-
     // figma.closePlugin("Text layers updated from Google Sheets.");
   }
 };
